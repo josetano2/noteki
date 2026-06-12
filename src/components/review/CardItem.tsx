@@ -14,11 +14,6 @@ interface CardItemProps {
   onDelete: (id: string) => void
 }
 
-const CARD_TYPE_LABELS: Record<AnkiCard['type'], string> = {
-  basic: 'Basic',
-  cloze: 'Cloze',
-  'basic-reversed': 'Basic+R',
-}
 
 export function CardItem({ card, onUpdate, onDelete }: CardItemProps) {
   const [editing, setEditing] = useState(false)
@@ -86,12 +81,19 @@ export function CardItem({ card, onUpdate, onDelete }: CardItemProps) {
   }
 
   return (
-    <div className="group rounded-lg border border-border bg-card p-4 flex flex-col gap-3 hover:border-border/80 transition-colors">
+    <div className={cn(
+      'group rounded-lg border bg-card p-4 flex flex-col gap-3 transition-colors',
+      card.isDuplicate
+        ? 'border-yellow-600/50 bg-yellow-950/20'
+        : 'border-border hover:border-border/80',
+    )}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
-            {CARD_TYPE_LABELS[card.type]}
-          </Badge>
+          {card.isDuplicate && (
+            <Badge className="text-xs px-1.5 py-0 h-5 bg-yellow-600/20 text-yellow-400 border-yellow-600/40">
+              already saved
+            </Badge>
+          )}
           {card.tags.map((tag) => (
             <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0 h-5 text-muted-foreground">
               {tag}

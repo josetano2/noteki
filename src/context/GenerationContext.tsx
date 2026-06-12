@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import type { AnkiCard, GenerationStatus } from '@/types'
 import { generateCards } from '@/lib/claude'
 import { addNotesToDeck, createDeck } from '@/lib/ankiconnect'
+import { getRegistry, addToRegistry } from '@/lib/registry'
 import { useSettings } from './SettingsContext'
 import { usePreferences } from './PreferencesContext'
 
@@ -58,7 +59,12 @@ export function GenerationProvider({
         preferences,
         apiKey: settings.claudeApiKey,
       })
-      setCards(result)
+      const registry = getRegistry()
+      const marked = result.map((card) => ({
+        ...card,
+        isDuplicate: registry.has(card.front),
+      }))
+      setCards(marked)
       setStatus('done')
       onGenerated?.()
     } catch (err) {
@@ -77,6 +83,13 @@ export function GenerationProvider({
         await createDeck(url, deckConfig.deckName)
       }
       const { added, skipped } = await addNotesToDeck(url, deckConfig.deckName, cards)
+      // Save newly added cards to registry
+      const newFronts = cards
+        .filter((c) => !c.isDuplicate)
+        .map((c) => c.front)
+      addToRegistry(newFronts)
+      // Mark all as non-duplicate now that they're in the registry
+      setCards((prev) => prev.map((c) => ({ ...c, isDuplicate: false })))
       setStatus('done')
       if (skipped > 0) {
         setError(`${added} cards added, ${skipped} skipped (already in deck)`)

@@ -20,8 +20,8 @@ Return ONLY a raw JSON object (no markdown, no code blocks):
       "meaning": "Have done ~ before",
       "pattern": "V(た) + ことがある",
       "examples": [
-        "日本に行ったことがある。",
-        "寿司を食べたことがありますか。"
+        { "jp": "日本に行ったことがある。", "en": "I have been to Japan before." },
+        { "jp": "寿司を食べたことがありますか。", "en": "Have you ever eaten sushi?" }
       ],
       "tags": ["grammar", "n5"]
     }
@@ -32,24 +32,28 @@ Rules:
 - front: the grammar point only, keep it short
 - meaning: one concise English translation
 - pattern: the grammatical structure
-- examples: 2-3 natural Japanese sentences using the grammar point
+- examples: 2-3 natural Japanese sentences with English translation
 - tags: lowercase, relevant (jlpt level, grammar category, etc.)`
+
+interface RawExample {
+  jp: string
+  en: string
+}
 
 interface RawCard {
   front: string
   meaning: string
   pattern: string
-  examples: string[]
+  examples: RawExample[]
   tags: string[]
 }
 
 function formatBack(card: RawCard): string {
   const examples = card.examples
-    .map((ex) => `<li>${ex}</li>`)
+    .map((ex) => `<li>${ex.jp}<br><span class="translation">${ex.en}</span></li>`)
     .join('')
 
-  return `\
-<div class="noteki-card">
+  return `<div class="noteki-card">
   <p class="meaning"><b>Meaning:</b> ${card.meaning}</p>
   <hr/>
   <p class="label">Pattern</p>

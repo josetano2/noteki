@@ -7,6 +7,7 @@ export interface AnkiCard {
   type: CardType
   tags: string[]
   isEdited: boolean
+  isDuplicate?: boolean
 }
 
 export interface CardPreferences {

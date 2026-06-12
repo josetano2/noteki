@@ -123,3 +123,8 @@
 .card-back li {
   line-height: 1.5;
 }
+.card-back .translation {
+  font-size: 0.75rem;
+  color: #71717a;
+  font-style: italic;
+}
