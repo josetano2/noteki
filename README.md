@@ -1,73 +1,56 @@
-# React + TypeScript + Vite
+# noteki
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Convert study notes into Anki flashcards using Claude AI.
 
-Currently, two official plugins are available:
+## What it does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Paste your study notes, hit generate — Claude reads them and creates structured Anki cards automatically. Cards are exported directly into Anki via AnkiConnect. Duplicates are detected and skipped so you never pay for the same card twice.
 
-## React Compiler
+## Card format
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Each card is generated with:
 
-## Expanding the ESLint configuration
+- **Front** — the grammar point or concept
+- **Back** — meaning, pattern, and 2–3 examples with English translations
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Setup
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- [Anki](https://apps.ankiweb.net/) with the [AnkiConnect](https://ankiweb.net/shared/info/2055492159) add-on installed
+- An [Anthropic API key](https://console.anthropic.com) (separate from Claude Pro)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Install and run
+
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open [http://localhost:5173](http://localhost:5173).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Configure
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Go to **Settings** and fill in:
+
+- **Claude API Key** — your `sk-ant-...` key from console.anthropic.com
+- **AnkiConnect URL** — leave as `http://127.0.0.1:8765` unless you changed the default
+
+Hit **Test** to verify Anki is reachable.
+
+## Usage
+
+1. **Editor** — paste or write your notes in the left panel
+2. Set language and any extra instructions in the right panel
+3. Choose a deck (create new or append to existing)
+4. Hit **Generate cards** and wait for Claude to process
+5. Review the generated cards — cards already in your collection are highlighted in yellow
+6. Hit **Export to Anki** to push them
+
+Your notes and generated cards are saved in localStorage so refreshing the page won't lose your work or cost another API call.
+
+## Notes
+
+- Personal local tool — do not deploy publicly with your API key
+- AnkiConnect only allows connections from localhost; the dev server proxies requests automatically to avoid CORS issues
+- The grammar registry (`noteki:registry` in localStorage) tracks exported cards to flag future duplicates
