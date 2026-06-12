@@ -95,3 +95,31 @@
     background: #52525b;
   }
 }
+
+/* Card back HTML styles */
+.card-back .meaning {
+  margin: 0 0 8px;
+  color: #e4e4e7;
+}
+.card-back hr {
+  border: none;
+  border-top: 1px solid #27272a;
+  margin: 8px 0;
+}
+.card-back .label {
+  margin: 8px 0 2px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #52525b;
+}
+.card-back ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.card-back li {
+  line-height: 1.5;
+}

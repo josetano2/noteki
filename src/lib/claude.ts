@@ -44,17 +44,19 @@ interface RawCard {
 }
 
 function formatBack(card: RawCard): string {
-  const lines: string[] = []
-  lines.push(`**Meaning:** ${card.meaning}`)
-  lines.push('')
-  lines.push('**Pattern**')
-  lines.push(`- ${card.pattern}`)
-  lines.push('')
-  lines.push('**Examples**')
-  for (const ex of card.examples) {
-    lines.push(`- ${ex}`)
-  }
-  return lines.join('\n')
+  const examples = card.examples
+    .map((ex) => `<li>${ex}</li>`)
+    .join('')
+
+  return `\
+<div class="noteki-card">
+  <p class="meaning"><b>Meaning:</b> ${card.meaning}</p>
+  <hr/>
+  <p class="label">Pattern</p>
+  <ul><li>${card.pattern}</li></ul>
+  <p class="label">Examples</p>
+  <ul>${examples}</ul>
+</div>`
 }
 
 export async function generateCards(params: GenerateCardsParams): Promise<AnkiCard[]> {
