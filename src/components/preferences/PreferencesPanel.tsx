@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 import type { CardPreferences } from '@/types'
 
 interface PreferencesPanelProps {
@@ -67,20 +68,40 @@ export function PreferencesPanel({ preferences, onChange }: PreferencesPanelProp
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <Label className="text-xs text-muted-foreground uppercase tracking-wider">Card count</Label>
-          <span className="text-sm font-mono text-foreground">{preferences.cardCount}</span>
+          <button
+            type="button"
+            onClick={() => update('dynamicCount', !preferences.dynamicCount)}
+            className={cn(
+              'text-xs px-2 py-0.5 rounded transition-colors',
+              preferences.dynamicCount
+                ? 'bg-primary/20 text-primary'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {preferences.dynamicCount ? 'Auto' : preferences.cardCount}
+          </button>
         </div>
-        <Slider
-          min={5}
-          max={50}
-          step={5}
-          value={[preferences.cardCount]}
-          onValueChange={(v) => update('cardCount', v as number)}
-          className="w-full"
-        />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>5</span>
-          <span>50</span>
-        </div>
+        {!preferences.dynamicCount && (
+          <>
+            <Slider
+              min={5}
+              max={50}
+              step={5}
+              value={preferences.cardCount}
+              onValueChange={(v) => update('cardCount', v as number)}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>5</span>
+              <span>50</span>
+            </div>
+          </>
+        )}
+        {preferences.dynamicCount && (
+          <p className="text-xs text-muted-foreground">
+            Claude decides based on note length and content
+          </p>
+        )}
       </div>
 
       <div className="flex items-center justify-between">

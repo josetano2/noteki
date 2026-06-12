@@ -15,19 +15,23 @@ export function DeckPanel() {
   const { deckConfig, setDeckConfig } = usePreferences()
   const { settings } = useSettings()
   const [loading, setLoading] = useState(false)
+  const [ankiError, setAnkiError] = useState<string | null>(null)
 
   async function refreshDecks() {
     setLoading(true)
+    setAnkiError(null)
     try {
       const decks = await fetchDeckNames(settings.ankiConnectUrl)
       setDeckConfig({ ...deckConfig, existingDecks: decks })
+    } catch (err) {
+      setAnkiError(err instanceof Error ? err.message : 'Could not reach AnkiConnect')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (deckConfig.existingDecks.length === 0) refreshDecks()
+    refreshDecks()
   }, [])
 
   function setAction(action: DeckAction) {
@@ -103,7 +107,13 @@ export function DeckPanel() {
         </div>
       )}
 
-      {deckConfig.deckName && (
+      {ankiError && (
+        <p className="text-xs text-destructive">
+          Anki not reachable — open Anki with AnkiConnect installed.
+        </p>
+      )}
+
+      {deckConfig.deckName && !ankiError && (
         <p className="text-xs text-muted-foreground">
           Cards will be added to <span className="text-foreground font-mono">{deckConfig.deckName}</span>
         </p>

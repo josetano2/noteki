@@ -14,6 +14,7 @@ export interface CardPreferences {
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   language: string
   cardCount: number
+  dynamicCount: boolean
   includeTags: boolean
   context: string
 }
@@ -39,6 +40,7 @@ export const DEFAULT_PREFERENCES: CardPreferences = {
   difficulty: 'intermediate',
   language: 'English',
   cardCount: 10,
+  dynamicCount: true,
   includeTags: true,
   context: '',
 }
