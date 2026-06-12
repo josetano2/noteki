@@ -2,11 +2,14 @@ import { useGeneration } from '@/context/GenerationContext'
 import { Button } from '@/components/ui/button'
 
 export function GenerateButton() {
-  const { noteContent, status, generate } = useGeneration()
+  const { noteContent, status, error, generate } = useGeneration()
   const disabled = !noteContent.trim() || status === 'generating'
 
   return (
-    <div className="p-4 border-t border-border">
+    <div className="p-4 border-t border-border flex flex-col gap-2">
+      {status === 'error' && error && (
+        <p className="text-xs text-destructive wrap-break-word">{error}</p>
+      )}
       <Button
         onClick={generate}
         disabled={disabled}

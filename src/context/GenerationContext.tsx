@@ -61,8 +61,11 @@ export function GenerationProvider({
       if (deckConfig.action === 'create') {
         await createDeck(url, deckConfig.deckName)
       }
-      await addNotesToDeck(url, deckConfig.deckName, cards)
+      const { added, skipped } = await addNotesToDeck(url, deckConfig.deckName, cards)
       setStatus('done')
+      if (skipped > 0) {
+        setError(`${added} cards added, ${skipped} skipped (already in deck)`)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Export failed')
       setStatus('error')

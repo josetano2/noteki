@@ -7,102 +7,54 @@ export interface GenerateCardsParams {
   apiKey: string
 }
 
-const SYSTEM_PROMPT = `You are an expert educator and flashcard creator.
+const SYSTEM_PROMPT = `You are a Japanese grammar flashcard generator.
 
-Your task is to transform study notes into structured learning cards.
+Generate exactly ONE card per grammar point. No duplicates, no padding.
 
-Rules:
-1. Extract all important concepts.
-2. Split concepts into atomic pieces of knowledge.
-3. Preserve examples and nuances.
-4. Include important warnings, exceptions, and common mistakes.
-5. Generate as many cards as necessary for complete coverage.
-6. Return ONLY valid JSON.
+Return ONLY a raw JSON object (no markdown, no code blocks):
 
-Output Format:
 {
   "cards": [
     {
-      "front": {
-        "question": "～たことがある",
-        "card_type": "grammar",
-      },
-      "back": {
-        "answer": "Have done something before (past experience)",
-        "definition": "Used to express past experiences.",
-        "example": [
-          {
-            "japanese": "日本に行ったことがある。",
-            "english": "I have been to Japan."
-          }
-        ],
-        "notes": [
-          "Uses the past tense form of the verb.",
-          "Indicates life experience rather than a specific completed action."
-        ],
-        "common_mistakes": [
-          "Confusing it with ～たところ."
-        ],
-        "related_concepts": [
-          "～たところ",
-          "～ている"
-        ]
-      }
+      "front": "～たことがある",
+      "meaning": "Have done ~ before",
+      "pattern": "V(た) + ことがある",
+      "examples": [
+        "日本に行ったことがある。",
+        "寿司を食べたことがありますか。"
+      ],
+      "tags": ["grammar", "n5"]
     }
   ]
-}`
-
-interface RawExample {
-  japanese?: string
-  english?: string
-  [key: string]: string | undefined
 }
+
+Rules:
+- front: the grammar point only, keep it short
+- meaning: one concise English translation
+- pattern: the grammatical structure
+- examples: 2-3 natural Japanese sentences using the grammar point
+- tags: lowercase, relevant (jlpt level, grammar category, etc.)`
 
 interface RawCard {
-  front: {
-    question: string
-    card_type: string
-    difficulty: string
-    hint?: string
-  }
-  back: {
-    answer: string
-    definition?: string
-    example?: RawExample[]
-    notes?: string[]
-    common_mistakes?: string[]
-    related_concepts?: string[]
-  }
+  front: string
+  meaning: string
+  pattern: string
+  examples: string[]
+  tags: string[]
 }
 
-function formatBack(back: RawCard['back']): string {
-  const parts: string[] = [back.answer]
-
-  if (back.definition) parts.push(`\n${back.definition}`)
-
-  if (back.example?.length) {
-    parts.push('\nExamples:')
-    for (const ex of back.example) {
-      const lines = Object.values(ex).filter(Boolean)
-      parts.push(lines.map((l) => `  ${l}`).join('\n'))
-    }
+function formatBack(card: RawCard): string {
+  const lines: string[] = []
+  lines.push(`**Meaning:** ${card.meaning}`)
+  lines.push('')
+  lines.push('**Pattern**')
+  lines.push(`- ${card.pattern}`)
+  lines.push('')
+  lines.push('**Examples**')
+  for (const ex of card.examples) {
+    lines.push(`- ${ex}`)
   }
-
-  if (back.notes?.length) {
-    parts.push('\nNotes:')
-    parts.push(back.notes.map((n) => `  • ${n}`).join('\n'))
-  }
-
-  if (back.common_mistakes?.length) {
-    parts.push('\nCommon mistakes:')
-    parts.push(back.common_mistakes.map((m) => `  • ${m}`).join('\n'))
-  }
-
-  if (back.related_concepts?.length) {
-    parts.push(`\nRelated: ${back.related_concepts.join(', ')}`)
-  }
-
-  return parts.join('\n')
+  return lines.join('\n')
 }
 
 export async function generateCards(params: GenerateCardsParams): Promise<AnkiCard[]> {
@@ -113,7 +65,7 @@ export async function generateCards(params: GenerateCardsParams): Promise<AnkiCa
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
 
   const userPrompt = [
-    preferences.language !== 'English' && `Generate cards in ${preferences.language}.`,
+    preferences.language !== 'English' && `Target language: ${preferences.language}.`,
     preferences.includeTags ? 'Include relevant tags.' : 'Do not include tags.',
     preferences.context && `Additional instructions: ${preferences.context}`,
     '',
@@ -129,14 +81,15 @@ export async function generateCards(params: GenerateCardsParams): Promise<AnkiCa
   })
 
   const raw = message.content[0].type === 'text' ? message.content[0].text : '{}'
-  const parsed = JSON.parse(raw) as { cards: RawCard[] }
+  const cleaned = raw.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
+  const parsed = JSON.parse(cleaned) as { cards: RawCard[] }
 
   return parsed.cards.map((card) => ({
     id: crypto.randomUUID(),
-    front: card.front.question,
-    back: formatBack(card.back),
+    front: card.front,
+    back: formatBack(card),
     type: 'basic' as AnkiCard['type'],
-    tags: [card.front.card_type, card.front.difficulty].filter(Boolean),
+    tags: card.tags ?? [],
     isEdited: false,
   }))
 }

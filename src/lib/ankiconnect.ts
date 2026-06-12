@@ -28,14 +28,17 @@ export async function createDeck(url: string, deckName: string): Promise<void> {
   await invoke(url, 'createDeck', { deck: deckName })
 }
 
-export async function addNotesToDeck(url: string, deckName: string, cards: AnkiCard[]): Promise<void> {
+export async function addNotesToDeck(url: string, deckName: string, cards: AnkiCard[]): Promise<{ added: number; skipped: number }> {
   const notes = cards.map((card) => ({
     deckName,
-    modelName: card.type === 'cloze' ? 'Cloze' : 'Basic',
-    fields: card.type === 'cloze'
-      ? { Text: card.front, 'Back Extra': card.back }
-      : { Front: card.front, Back: card.back },
+    modelName: 'Basic',
+    fields: { Front: card.front, Back: card.back },
     tags: card.tags,
+    options: { allowDuplicate: false, duplicateScope: 'deck' },
   }))
-  await invoke(url, 'addNotes', { notes })
+  // addNotes returns an array of note IDs — null means duplicate was skipped
+  const results = await invoke<(number | null)[]>(url, 'addNotes', { notes })
+  const added = results.filter((id) => id !== null).length
+  const skipped = results.filter((id) => id === null).length
+  return { added, skipped }
 }
