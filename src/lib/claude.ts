@@ -9,8 +9,7 @@ export interface GenerateCardsParams {
 
 export async function generateCards(_params: GenerateCardsParams): Promise<AnkiCard[]> {
   await new Promise((resolve) => setTimeout(resolve, 1800))
-  const count = Math.min(_params.preferences.cardCount, MOCK_CARDS.length)
-  return MOCK_CARDS.slice(0, count).map((card) => ({
+  return MOCK_CARDS.map((card) => ({
     ...card,
     id: crypto.randomUUID(),
     isEdited: false,

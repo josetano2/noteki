@@ -10,11 +10,7 @@ export interface AnkiCard {
 }
 
 export interface CardPreferences {
-  cardType: CardType
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
   language: string
-  cardCount: number
-  dynamicCount: boolean
   includeTags: boolean
   context: string
 }
@@ -36,11 +32,7 @@ export interface AppSettings {
 export type GenerationStatus = 'idle' | 'generating' | 'done' | 'error'
 
 export const DEFAULT_PREFERENCES: CardPreferences = {
-  cardType: 'basic',
-  difficulty: 'intermediate',
   language: 'English',
-  cardCount: 10,
-  dynamicCount: true,
   includeTags: true,
   context: '',
 }
