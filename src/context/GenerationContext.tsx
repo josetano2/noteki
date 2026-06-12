@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import type { AnkiCard, GenerationStatus } from '@/types'
 import { generateCards } from '@/lib/claude'
 import { addNotesToDeck, createDeck } from '@/lib/ankiconnect'
@@ -28,10 +28,25 @@ export function GenerationProvider({
   const { settings } = useSettings()
   const { preferences, deckConfig } = usePreferences()
 
-  const [noteContent, setNoteContent] = useState('')
-  const [cards, setCards] = useState<AnkiCard[]>([])
+  const [noteContent, setNoteContent] = useState<string>(() => {
+    return localStorage.getItem('noteki:note') ?? ''
+  })
+  const [cards, setCards] = useState<AnkiCard[]>(() => {
+    try {
+      const raw = localStorage.getItem('noteki:cards')
+      return raw ? (JSON.parse(raw) as AnkiCard[]) : []
+    } catch { return [] }
+  })
   const [status, setStatus] = useState<GenerationStatus>('idle')
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    localStorage.setItem('noteki:note', noteContent)
+  }, [noteContent])
+
+  useEffect(() => {
+    localStorage.setItem('noteki:cards', JSON.stringify(cards))
+  }, [cards])
 
   async function generate() {
     if (!noteContent.trim()) return
