@@ -81,14 +81,20 @@ export async function generateCards(params: GenerateCardsParams): Promise<AnkiCa
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   })
 
   const raw = message.content[0].type === 'text' ? message.content[0].text : '{}'
   const cleaned = raw.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
-  const parsed = JSON.parse(cleaned) as { cards: RawCard[] }
+
+  let parsed: { cards: RawCard[] }
+  try {
+    parsed = JSON.parse(cleaned) as { cards: RawCard[] }
+  } catch {
+    throw new Error(`Failed to parse Claude response. Stop reason: ${message.stop_reason}. Preview: ${cleaned.slice(0, 200)}`)
+  }
 
   return parsed.cards.map((card) => ({
     id: crypto.randomUUID(),
