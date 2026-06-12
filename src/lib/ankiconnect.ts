@@ -1,7 +1,14 @@
 import type { AnkiCard } from '@/types'
 
+function resolveUrl(configuredUrl: string): string {
+  // In dev, route through Vite proxy (/anki) to avoid CORS.
+  // In prod builds, use the configured URL directly (user hosts their own server).
+  if (import.meta.env.DEV) return '/anki'
+  return configuredUrl
+}
+
 async function invoke<T>(url: string, action: string, params: Record<string, unknown> = {}): Promise<T> {
-  const res = await fetch(url, {
+  const res = await fetch(resolveUrl(url), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, version: 6, params }),

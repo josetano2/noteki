@@ -47,6 +47,6 @@ export const DEFAULT_PREFERENCES: CardPreferences = {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   claudeApiKey: '',
-  ankiConnectUrl: 'http://localhost:8765',
+  ankiConnectUrl: 'http://127.0.0.1:8765',
   defaultPreferences: DEFAULT_PREFERENCES,
 }
