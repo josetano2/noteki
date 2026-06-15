@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import type { AnkiCard, GenerationStatus } from '@/types'
+import type { AnkiCard, GenerationStatus, BatchProgress } from '@/types'
 import { generateCards } from '@/lib/claude'
 import { addNotesToDeck, createDeck } from '@/lib/ankiconnect'
 import { getRegistry, addToRegistry } from '@/lib/registry'
@@ -13,6 +13,7 @@ interface GenerationContextValue {
   setCards: React.Dispatch<React.SetStateAction<AnkiCard[]>>
   status: GenerationStatus
   error: string | null
+  batchProgress: BatchProgress | null
   generate: () => Promise<void>
   exportToAnki: () => Promise<void>
 }
@@ -40,6 +41,7 @@ export function GenerationProvider({
   })
   const [status, setStatus] = useState<GenerationStatus>('idle')
   const [error, setError] = useState<string | null>(null)
+  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null)
 
   useEffect(() => {
     localStorage.setItem('noteki:note', noteContent)
@@ -53,19 +55,34 @@ export function GenerationProvider({
     if (!noteContent.trim()) return
     setStatus('generating')
     setError(null)
+    setBatchProgress(null)
+    setCards([])
+
+    const registry = getRegistry()
+    let failed = 0
+
     try {
-      const result = await generateCards({ noteContent, preferences })
-      const registry = getRegistry()
-      const marked = result.map((card) => ({
-        ...card,
-        isDuplicate: registry.has(card.front),
-      }))
-      setCards(marked)
+      await generateCards({
+        noteContent,
+        preferences,
+        onBatchDone: (batchCards, current, total) => {
+          setBatchProgress({ current, total, failed })
+          const marked = batchCards.map((card) => ({
+            ...card,
+            isDuplicate: registry.has(card.front),
+          }))
+          setCards((prev) => [...prev, ...marked])
+          if (current === total && failed === 0) onGenerated?.()
+        },
+      })
       setStatus('done')
-      onGenerated?.()
+      setBatchProgress(null)
+      if (failed === 0) onGenerated?.()
     } catch (err) {
+      failed++
       setError(err instanceof Error ? err.message : 'Generation failed')
       setStatus('error')
+      setBatchProgress(null)
     }
   }
 
@@ -98,7 +115,7 @@ export function GenerationProvider({
 
   return (
     <GenerationContext.Provider
-      value={{ noteContent, setNoteContent, cards, setCards, status, error, generate, exportToAnki }}
+      value={{ noteContent, setNoteContent, cards, setCards, status, error, batchProgress, generate, exportToAnki }}
     >
       {children}
     </GenerationContext.Provider>

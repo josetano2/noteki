@@ -4,6 +4,24 @@ import type { AnkiCard, CardPreferences, CardPreview } from '@/types'
 export interface GenerateCardsParams {
   noteContent: string
   preferences: CardPreferences
+  onBatchDone?: (cards: AnkiCard[], batchIndex: number, total: number) => void
+}
+
+// Split notes into chunks by blank lines, grouping up to maxChars per batch
+export function splitIntoBatches(text: string, maxChars = 1500): string[] {
+  const sections = text.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean)
+  const batches: string[] = []
+  let current = ''
+  for (const section of sections) {
+    if (current && current.length + section.length + 2 > maxChars) {
+      batches.push(current)
+      current = section
+    } else {
+      current = current ? `${current}\n\n${section}` : section
+    }
+  }
+  if (current) batches.push(current)
+  return batches.length ? batches : [text]
 }
 
 const SYSTEM_PROMPT = `You are a Japanese grammar flashcard generator.
@@ -96,21 +114,14 @@ function formatBack(card: RawCard): string {
 </div>`
 }
 
-export async function generateCards(params: GenerateCardsParams): Promise<AnkiCard[]> {
-  const { noteContent, preferences } = params
-  const apiKey = import.meta.env.VITE_CLAUDE_API_KEY as string
-
-  if (!apiKey) throw new Error('VITE_CLAUDE_API_KEY is not set in .env')
-
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
-
+async function generateBatch(client: Anthropic, chunk: string, preferences: CardPreferences): Promise<AnkiCard[]> {
   const userPrompt = [
     preferences.language !== 'English' && `Target language: ${preferences.language}.`,
     preferences.includeTags ? 'Include relevant tags.' : 'Do not include tags.',
     preferences.context && `Additional instructions: ${preferences.context}`,
     '',
     'Study Notes:',
-    noteContent,
+    chunk,
   ].filter(Boolean).join('\n')
 
   const message = await client.messages.create({
@@ -147,4 +158,23 @@ export async function generateCards(params: GenerateCardsParams): Promise<AnkiCa
       preview,
     }
   })
+}
+
+export async function generateCards(params: GenerateCardsParams): Promise<AnkiCard[]> {
+  const { noteContent, preferences, onBatchDone } = params
+  const apiKey = import.meta.env.VITE_CLAUDE_API_KEY as string
+
+  if (!apiKey) throw new Error('VITE_CLAUDE_API_KEY is not set in .env')
+
+  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
+  const batches = splitIntoBatches(noteContent)
+  const allCards: AnkiCard[] = []
+
+  for (let i = 0; i < batches.length; i++) {
+    const cards = await generateBatch(client, batches[i], preferences)
+    allCards.push(...cards)
+    onBatchDone?.(cards, i + 1, batches.length)
+  }
+
+  return allCards
 }

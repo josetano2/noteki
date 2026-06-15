@@ -45,6 +45,12 @@ export interface AppSettings {
 
 export type GenerationStatus = 'idle' | 'generating' | 'done' | 'error'
 
+export interface BatchProgress {
+  current: number
+  total: number
+  failed: number
+}
+
 export const DEFAULT_PREFERENCES: CardPreferences = {
   language: 'English',
   includeTags: true,
