@@ -1,8 +1,6 @@
 import type { AnkiCard } from '@/types'
 
 function resolveUrl(configuredUrl: string): string {
-  // In dev, route through Vite proxy (/anki) to avoid CORS.
-  // In prod builds, use the configured URL directly (user hosts their own server).
   if (import.meta.env.DEV) return '/anki'
   return configuredUrl
 }
@@ -28,41 +26,32 @@ export async function createDeck(url: string, deckName: string): Promise<void> {
   await invoke(url, 'createDeck', { deck: deckName })
 }
 
-export async function checkDuplicates(url: string, deckName: string, cards: AnkiCard[]): Promise<boolean[]> {
-  const notes = cards.map((card) => ({
-    deckName,
-    modelName: 'Basic',
-    fields: { Front: card.front, Back: card.back },
-    tags: card.tags,
-    options: { allowDuplicate: false, duplicateScope: 'deck' },
-  }))
-  return invoke<boolean[]>(url, 'canAddNotes', { notes })
-}
-
 export async function addNotesToDeck(
   url: string,
   deckName: string,
   cards: AnkiCard[],
 ): Promise<{ added: number; skipped: number; duplicateNames: string[] }> {
-  // Pre-check which cards Anki will accept
-  const canAdd = await checkDuplicates(url, deckName, cards)
-  const duplicateNames = cards
-    .filter((_, i) => !canAdd[i])
-    .map((c) => c.preview?.front ?? c.tags[0] ?? '?')
+  // Only export cards our registry hasn't already tracked as sent
+  const toAdd = cards.filter((c) => !c.isDuplicate)
+  const skippedByRegistry = cards
+    .filter((c) => c.isDuplicate)
+    .map((c) => c.preview?.front ?? '?')
 
-  const addable = cards.filter((_, i) => canAdd[i])
-  if (addable.length === 0) {
-    return { added: 0, skipped: cards.length, duplicateNames }
+  if (toAdd.length === 0) {
+    return { added: 0, skipped: cards.length, duplicateNames: skippedByRegistry }
   }
 
-  const notes = addable.map((card) => ({
+  // Use allowDuplicate: true — our registry is the source of truth for dedup,
+  // not Anki's own check which produces false positives from old/reformatted notes.
+  const notes = toAdd.map((card) => ({
     deckName,
     modelName: 'Basic',
     fields: { Front: card.front, Back: card.back },
     tags: card.tags,
-    options: { allowDuplicate: false, duplicateScope: 'deck' },
+    options: { allowDuplicate: true },
   }))
+
   await invoke(url, 'addNotes', { notes })
 
-  return { added: addable.length, skipped: duplicateNames.length, duplicateNames }
+  return { added: toAdd.length, skipped: skippedByRegistry.length, duplicateNames: skippedByRegistry }
 }
