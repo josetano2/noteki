@@ -100,8 +100,6 @@ export function GenerationProvider({
             .join(', ')
           const more = batchCards.length > 4 ? ` +${batchCards.length - 4} more` : ''
           pushLog(`Batch ${current} / ${total} done — ${batchCards.length} card${batchCards.length !== 1 ? 's' : ''}: ${names}${more}`, 'success')
-
-          if (current === total && failedRef.current === 0) onGenerated?.()
         },
       })
       setStatus('done')
@@ -127,13 +125,20 @@ export function GenerationProvider({
       if (deckConfig.action === 'create') {
         await createDeck(url, deckConfig.deckName)
       }
-      const { added, skipped } = await addNotesToDeck(url, deckConfig.deckName, cards)
-      const newFronts = cards.filter((c) => !c.isDuplicate).map((c) => c.front)
+      const { added, skipped, duplicateNames } = await addNotesToDeck(url, deckConfig.deckName, cards)
+      const dupeSet = new Set(duplicateNames)
+      // Mark duplicates yellow, clear flag on successfully added cards
+      setCards((prev) => prev.map((c) => ({
+        ...c,
+        isDuplicate: dupeSet.has(c.preview?.front ?? ''),
+      })))
+      const newFronts = cards
+        .filter((c) => !dupeSet.has(c.preview?.front ?? ''))
+        .map((c) => c.front)
       addToRegistry(newFronts)
-      setCards((prev) => prev.map((c) => ({ ...c, isDuplicate: false })))
       setStatus('done')
       if (skipped > 0) {
-        setError(`${added} cards added, ${skipped} skipped (already in deck)`)
+        setError(`${added} added — ${skipped} already in Anki: ${duplicateNames.join(', ')}`)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Export failed')

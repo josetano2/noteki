@@ -87,7 +87,10 @@ const ANKI_STYLES = `<style>
 </style>`
 
 function formatFront(text: string): string {
-  return `${ANKI_STYLES}<div class="nk"><div class="nk-front">${text}</div></div>`
+  // No <style> block here — Anki uses the Front field's text content for
+  // duplicate detection (stripping tags but keeping style text), so keeping
+  // it style-free ensures dedup works on the grammar point text only.
+  return `<div class="nk"><div class="nk-front">${text}</div></div>`
 }
 
 function formatBack(card: RawCard): string {
