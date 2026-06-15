@@ -11,11 +11,24 @@ const SettingsContext = createContext<SettingsContextValue | null>(null)
 
 const STORAGE_KEY = 'noteki:settings'
 
+function encode(s: AppSettings): string {
+  return btoa(JSON.stringify(s))
+}
+
+function decode(raw: string): AppSettings {
+  // support both legacy plain JSON and encoded
+  try {
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(atob(raw)) }
+  } catch {
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
+  }
+}
+
 function loadSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return DEFAULT_SETTINGS
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
+    return decode(raw)
   } catch {
     return DEFAULT_SETTINGS
   }
@@ -25,7 +38,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(loadSettings)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+    localStorage.setItem(STORAGE_KEY, encode(settings))
   }, [settings])
 
   function updateSettings(partial: Partial<AppSettings>) {

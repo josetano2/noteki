@@ -54,11 +54,7 @@ export function GenerationProvider({
     setStatus('generating')
     setError(null)
     try {
-      const result = await generateCards({
-        noteContent,
-        preferences,
-        apiKey: settings.claudeApiKey,
-      })
+      const result = await generateCards({ noteContent, preferences })
       const registry = getRegistry()
       const marked = result.map((card) => ({
         ...card,

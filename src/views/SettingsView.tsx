@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
+import { CheckCircle, XCircle } from 'lucide-react'
 import { useSettings } from '@/context/SettingsContext'
 import { PreferencesPanel } from '@/components/preferences/PreferencesPanel'
 import { fetchDeckNames } from '@/lib/ankiconnect'
@@ -12,14 +12,8 @@ import { DEFAULT_PREFERENCES } from '@/types'
 
 export function SettingsView() {
   const { settings, updateSettings } = useSettings()
-  const [showKey, setShowKey] = useState(false)
-  const [apiKey, setApiKey] = useState(settings.claudeApiKey)
   const [ankiUrl, setAnkiUrl] = useState(settings.ankiConnectUrl)
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle')
-
-  function saveApiKey() {
-    updateSettings({ claudeApiKey: apiKey })
-  }
 
   function saveAnkiUrl() {
     updateSettings({ ankiConnectUrl: ankiUrl })
@@ -43,40 +37,6 @@ export function SettingsView() {
           <h1 className="text-lg font-medium text-foreground">Settings</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Configure your API keys and preferences</p>
         </div>
-
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Claude API</CardTitle>
-            <CardDescription className="text-xs">Required for card generation</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs text-muted-foreground">API Key</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    type={showKey ? 'text' : 'password'}
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="sk-ant-..."
-                    className="h-8 text-sm pr-8 font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowKey(!showKey)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-                <Button size="sm" onClick={saveApiKey} className="h-8 text-xs">Save</Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Stored in localStorage only. Never sent anywhere except Anthropic.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
 
         <Card className="border-border bg-card">
           <CardHeader className="pb-3">

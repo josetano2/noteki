@@ -14,7 +14,6 @@ interface CardItemProps {
   onDelete: (id: string) => void
 }
 
-
 export function CardItem({ card, onUpdate, onDelete }: CardItemProps) {
   const [editing, setEditing] = useState(false)
   const [front, setFront] = useState(card.front)
@@ -27,6 +26,7 @@ export function CardItem({ card, onUpdate, onDelete }: CardItemProps) {
       back: back.trim(),
       tags: tagsStr.split(',').map((t) => t.trim()).filter(Boolean),
       isEdited: true,
+      preview: undefined,
     })
     setEditing(false)
   }
@@ -80,6 +80,8 @@ export function CardItem({ card, onUpdate, onDelete }: CardItemProps) {
     )
   }
 
+  const p = card.preview
+
   return (
     <div className={cn(
       'group rounded-lg border bg-card p-4 flex flex-col gap-3 transition-colors',
@@ -104,18 +106,11 @@ export function CardItem({ card, onUpdate, onDelete }: CardItemProps) {
           )}
         </div>
         <div className={cn('flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity')}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => setEditing(true)}
-          >
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditing(true)}>
             <Pencil className="h-3 w-3" />
           </Button>
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 hover:text-destructive"
+            variant="ghost" size="icon" className="h-6 w-6 hover:text-destructive"
             onClick={() => onDelete(card.id)}
           >
             <Trash2 className="h-3 w-3" />
@@ -123,14 +118,54 @@ export function CardItem({ card, onUpdate, onDelete }: CardItemProps) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 text-sm">
-        <div className="text-foreground font-medium leading-relaxed card-front" dangerouslySetInnerHTML={{ __html: card.front }} />
-        <Separator className="bg-border" />
-        <div
-          className="text-muted-foreground leading-relaxed card-back"
-          dangerouslySetInnerHTML={{ __html: card.back }}
-        />
-      </div>
+      {p ? (
+        <div className="flex flex-col gap-3 text-sm">
+          {/* Front */}
+          <div className="text-center text-2xl font-semibold text-foreground tracking-wide py-1" style={{ fontFamily: "'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif" }}>
+            {p.front}
+          </div>
+
+          <Separator className="bg-border" />
+
+          {/* Meaning */}
+          <div className="flex items-baseline gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-primary shrink-0">Meaning</span>
+            <span className="text-foreground font-medium">{p.meaning}</span>
+          </div>
+
+          {/* Pattern */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Pattern</span>
+            <code className="inline-block self-start bg-primary/10 text-primary/90 text-xs px-3 py-1 rounded-md border border-primary/20 font-mono">
+              {p.pattern}
+            </code>
+          </div>
+
+          <Separator className="bg-border" />
+
+          {/* Examples */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Examples</span>
+            <div className="flex flex-col gap-2">
+              {p.examples.map((ex, i) => (
+                <div key={i} className="pl-3 border-l-2 border-amber-500/60">
+                  <div className="text-foreground leading-relaxed" style={{ fontFamily: "'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif" }}>
+                    {ex.jp}
+                  </div>
+                  <div className="text-muted-foreground text-xs italic mt-0.5">{ex.en}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Fallback for manually edited cards (no preview data) */
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="text-foreground font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: card.front }} />
+          <Separator className="bg-border" />
+          <div className="text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: card.back }} />
+        </div>
+      )}
     </div>
   )
 }

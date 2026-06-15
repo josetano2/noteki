@@ -1,10 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { AnkiCard, CardPreferences } from '@/types'
+import type { AnkiCard, CardPreferences, CardPreview } from '@/types'
 
 export interface GenerateCardsParams {
   noteContent: string
   preferences: CardPreferences
-  apiKey: string
 }
 
 const SYSTEM_PROMPT = `You are a Japanese grammar flashcard generator.
@@ -38,6 +37,7 @@ Rules:
 - the sentence should be a little bit more complex too, so in a real life case, it would be easier to visualize it
 - if its necessary, you could add notes: in the back to give a more detailed explanation, specific usecase, other usecase
 - for vocabulary points, make the vocabulary in the front, and the meaning in the back, do not group them together
+- there is definition in my notes, if you can make the definition better, you could replace or add it to the definition
 - tags: lowercase, relevant (jlpt level, grammar category, etc.)`
 
 interface RawExample {
@@ -53,104 +53,54 @@ interface RawCard {
   tags: string[]
 }
 
+const ANKI_STYLES = `<style>
+.nk { font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif; max-width: 560px; margin: 0 auto; padding: 4px 0; line-height: 1.6; color: #e4e4e7; }
+.nk-front { font-size: 2em; font-weight: 600; text-align: center; letter-spacing: 0.05em; padding: 8px 0; color: #e4e4e7; }
+.nk-label { font-size: 0.65em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #a78bfa; margin-bottom: 6px; }
+.nk-meaning { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+.nk-meaning-text { font-size: 1.1em; font-weight: 500; color: #e4e4e7; }
+.nk-pattern-wrap { margin-bottom: 16px; }
+.nk-pattern { display: inline-block; background: #2e1065; color: #c4b5fd; font-family: monospace; font-size: 0.95em; padding: 5px 12px; border-radius: 6px; border: 1px solid #4c1d95; }
+.nk-divider { border-top: 1px solid #3f3f46; margin-bottom: 16px; }
+.nk-example { padding: 10px 14px; background: #27272a; border-left: 3px solid #d4a853; border-radius: 0 6px 6px 0; margin-bottom: 8px; }
+.nk-example-jp { font-size: 1.05em; color: #e4e4e7; line-height: 1.6; }
+.nk-example-en { font-size: 0.85em; color: #a1a1aa; margin-top: 3px; font-style: italic; }
+</style>`
+
 function formatFront(text: string): string {
-  return `<div style="
-    font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
-    font-size: 2em;
-    font-weight: 600;
-    color: #1a1a1a;
-    text-align: center;
-    letter-spacing: 0.05em;
-    padding: 8px 0;
-  ">${text}</div>`
+  return `${ANKI_STYLES}<div class="nk"><div class="nk-front">${text}</div></div>`
 }
 
 function formatBack(card: RawCard): string {
   const examples = card.examples.map((ex) => `
-    <div style="
-      padding: 10px 14px;
-      background: #f8f8f6;
-      border-left: 3px solid #d4a853;
-      border-radius: 0 6px 6px 0;
-      margin-bottom: 8px;
-    ">
-      <div style="font-size: 1.05em; color: #1a1a1a; line-height: 1.6;">${ex.jp}</div>
-      <div style="font-size: 0.85em; color: #6b6b6b; margin-top: 3px; font-style: italic;">${ex.en}</div>
+    <div class="nk-example">
+      <div class="nk-example-jp">${ex.jp}</div>
+      <div class="nk-example-en">${ex.en}</div>
     </div>`).join('')
 
-  return `
-<div style="
-  font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
-  max-width: 560px;
-  margin: 0 auto;
-  padding: 4px 0;
-  color: #1a1a1a;
-  line-height: 1.6;
-">
-
-  <!-- Meaning -->
-  <div style="
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin-bottom: 16px;
-  ">
-    <span style="
-      font-size: 0.65em;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #8b5cf6;
-      white-space: nowrap;
-    ">Meaning</span>
-    <span style="font-size: 1.1em; font-weight: 500; color: #1a1a1a;">${card.meaning}</span>
+  return `${ANKI_STYLES}
+<div class="nk">
+  <div class="nk-meaning">
+    <span class="nk-label" style="white-space:nowrap">Meaning</span>
+    <span class="nk-meaning-text">${card.meaning}</span>
   </div>
-
-  <!-- Pattern -->
-  <div style="margin-bottom: 16px;">
-    <div style="
-      font-size: 0.65em;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #8b5cf6;
-      margin-bottom: 6px;
-    ">Pattern</div>
-    <div style="
-      display: inline-block;
-      background: #f0ebff;
-      color: #5b21b6;
-      font-family: monospace;
-      font-size: 0.95em;
-      padding: 5px 12px;
-      border-radius: 6px;
-      border: 1px solid #ddd6fe;
-    ">${card.pattern}</div>
+  <div class="nk-pattern-wrap">
+    <div class="nk-label">Pattern</div>
+    <div class="nk-pattern">${card.pattern}</div>
   </div>
-
-  <!-- Divider -->
-  <div style="border-top: 1px solid #e5e5e5; margin-bottom: 16px;"></div>
-
-  <!-- Examples -->
+  <div class="nk-divider"></div>
   <div>
-    <div style="
-      font-size: 0.65em;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #8b5cf6;
-      margin-bottom: 8px;
-    ">Examples</div>
+    <div class="nk-label">Examples</div>
     ${examples}
   </div>
-
 </div>`
 }
 
 export async function generateCards(params: GenerateCardsParams): Promise<AnkiCard[]> {
-  const { noteContent, preferences, apiKey } = params
+  const { noteContent, preferences } = params
+  const apiKey = import.meta.env.VITE_CLAUDE_API_KEY as string
 
-  if (!apiKey) throw new Error('No Claude API key set. Add it in Settings.')
+  if (!apiKey) throw new Error('VITE_CLAUDE_API_KEY is not set in .env')
 
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
 
@@ -180,12 +130,21 @@ export async function generateCards(params: GenerateCardsParams): Promise<AnkiCa
     throw new Error(`Failed to parse Claude response. Stop reason: ${message.stop_reason}. Preview: ${cleaned.slice(0, 200)}`)
   }
 
-  return parsed.cards.map((card) => ({
-    id: crypto.randomUUID(),
-    front: formatFront(card.front),
-    back: formatBack(card),
-    type: 'basic' as AnkiCard['type'],
-    tags: card.tags ?? [],
-    isEdited: false,
-  }))
+  return parsed.cards.map((card) => {
+    const preview: CardPreview = {
+      front: card.front,
+      meaning: card.meaning,
+      pattern: card.pattern,
+      examples: card.examples,
+    }
+    return {
+      id: crypto.randomUUID(),
+      front: formatFront(card.front),
+      back: formatBack(card),
+      type: 'basic' as AnkiCard['type'],
+      tags: card.tags ?? [],
+      isEdited: false,
+      preview,
+    }
+  })
 }
