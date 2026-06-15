@@ -53,6 +53,18 @@ interface RawCard {
   tags: string[]
 }
 
+function formatFront(text: string): string {
+  return `<div style="
+    font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+    font-size: 2em;
+    font-weight: 600;
+    color: #1a1a1a;
+    text-align: center;
+    letter-spacing: 0.05em;
+    padding: 8px 0;
+  ">${text}</div>`
+}
+
 function formatBack(card: RawCard): string {
   const examples = card.examples.map((ex) => `
     <div style="
@@ -170,7 +182,7 @@ export async function generateCards(params: GenerateCardsParams): Promise<AnkiCa
 
   return parsed.cards.map((card) => ({
     id: crypto.randomUUID(),
-    front: card.front,
+    front: formatFront(card.front),
     back: formatBack(card),
     type: 'basic' as AnkiCard['type'],
     tags: card.tags ?? [],

@@ -96,6 +96,11 @@
   }
 }
 
+/* Card front — invert light color for dark app preview */
+.card-front [style*="color: #1a1a1a"] {
+  color: #e4e4e7 !important;
+}
+
 /* Card back — invert inline light styles for dark app preview */
 .card-back div[style] {
   filter: none;

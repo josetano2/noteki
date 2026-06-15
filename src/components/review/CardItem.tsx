@@ -124,7 +124,7 @@ export function CardItem({ card, onUpdate, onDelete }: CardItemProps) {
       </div>
 
       <div className="flex flex-col gap-2 text-sm">
-        <p className="text-foreground font-medium leading-relaxed">{card.front}</p>
+        <div className="text-foreground font-medium leading-relaxed card-front" dangerouslySetInnerHTML={{ __html: card.front }} />
         <Separator className="bg-border" />
         <div
           className="text-muted-foreground leading-relaxed card-back"
