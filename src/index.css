@@ -96,35 +96,32 @@
   }
 }
 
-/* Card back HTML styles */
-.card-back .meaning {
-  margin: 0 0 8px;
-  color: #e4e4e7;
+/* Card back — invert inline light styles for dark app preview */
+.card-back div[style] {
+  filter: none;
 }
-.card-back hr {
-  border: none;
-  border-top: 1px solid #27272a;
-  margin: 8px 0;
+.card-back {
+  font-size: 0.82rem;
 }
-.card-back .label {
-  margin: 8px 0 2px;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #52525b;
+/* Remap light colors to dark equivalents in-app */
+.card-back [style*="color: #1a1a1a"] {
+  color: #e4e4e7 !important;
 }
-.card-back ul {
-  margin: 0;
-  padding-left: 1.2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.card-back [style*="background: #f8f8f6"] {
+  background: #27272a !important;
+  border-left-color: #a78bfa !important;
 }
-.card-back li {
-  line-height: 1.5;
+.card-back [style*="color: #6b6b6b"] {
+  color: #71717a !important;
 }
-.card-back .translation {
-  font-size: 0.75rem;
-  color: #71717a;
-  font-style: italic;
+.card-back [style*="background: #f0ebff"] {
+  background: #2e1065 !important;
+  border-color: #4c1d95 !important;
+  color: #c4b5fd !important;
+}
+.card-back [style*="color: #5b21b6"] {
+  color: #c4b5fd !important;
+}
+.card-back [style*="border-top: 1px solid #e5e5e5"] {
+  border-top-color: #3f3f46 !important;
 }

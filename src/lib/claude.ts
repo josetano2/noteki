@@ -32,7 +32,12 @@ Rules:
 - front: the grammar point only, keep it short
 - meaning: one concise English translation
 - pattern: the grammatical structure
-- examples: 2-3 natural Japanese sentences with English translation
+- examples: 3-5 natural Japanese sentences with English translation
+- the given sentence should be a valid natural Japanese language that is used by the locals
+- if there is an example from the notes, you could reuse it, or if its too simple, you can make a new one that is more complex
+- the sentence should be a little bit more complex too, so in a real life case, it would be easier to visualize it
+- if its necessary, you could add notes: in the back to give a more detailed explanation, specific usecase, other usecase
+- for vocabulary points, make the vocabulary in the front, and the meaning in the back, do not group them together
 - tags: lowercase, relevant (jlpt level, grammar category, etc.)`
 
 interface RawExample {
@@ -49,17 +54,84 @@ interface RawCard {
 }
 
 function formatBack(card: RawCard): string {
-  const examples = card.examples
-    .map((ex) => `<li>${ex.jp}<br><span class="translation">${ex.en}</span></li>`)
-    .join('')
+  const examples = card.examples.map((ex) => `
+    <div style="
+      padding: 10px 14px;
+      background: #f8f8f6;
+      border-left: 3px solid #d4a853;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 8px;
+    ">
+      <div style="font-size: 1.05em; color: #1a1a1a; line-height: 1.6;">${ex.jp}</div>
+      <div style="font-size: 0.85em; color: #6b6b6b; margin-top: 3px; font-style: italic;">${ex.en}</div>
+    </div>`).join('')
 
-  return `<div class="noteki-card">
-  <p class="meaning"><b>Meaning:</b> ${card.meaning}</p>
-  <hr/>
-  <p class="label">Pattern</p>
-  <ul><li>${card.pattern}</li></ul>
-  <p class="label">Examples</p>
-  <ul>${examples}</ul>
+  return `
+<div style="
+  font-family: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 4px 0;
+  color: #1a1a1a;
+  line-height: 1.6;
+">
+
+  <!-- Meaning -->
+  <div style="
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 16px;
+  ">
+    <span style="
+      font-size: 0.65em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #8b5cf6;
+      white-space: nowrap;
+    ">Meaning</span>
+    <span style="font-size: 1.1em; font-weight: 500; color: #1a1a1a;">${card.meaning}</span>
+  </div>
+
+  <!-- Pattern -->
+  <div style="margin-bottom: 16px;">
+    <div style="
+      font-size: 0.65em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #8b5cf6;
+      margin-bottom: 6px;
+    ">Pattern</div>
+    <div style="
+      display: inline-block;
+      background: #f0ebff;
+      color: #5b21b6;
+      font-family: monospace;
+      font-size: 0.95em;
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid #ddd6fe;
+    ">${card.pattern}</div>
+  </div>
+
+  <!-- Divider -->
+  <div style="border-top: 1px solid #e5e5e5; margin-bottom: 16px;"></div>
+
+  <!-- Examples -->
+  <div>
+    <div style="
+      font-size: 0.65em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #8b5cf6;
+      margin-bottom: 8px;
+    ">Examples</div>
+    ${examples}
+  </div>
+
 </div>`
 }
 
