@@ -51,6 +51,13 @@ export interface BatchProgress {
   failed: number
 }
 
+export interface LogEntry {
+  id: string
+  time: string
+  message: string
+  type: 'info' | 'success' | 'error' | 'card'
+}
+
 export const DEFAULT_PREFERENCES: CardPreferences = {
   language: 'English',
   includeTags: true,

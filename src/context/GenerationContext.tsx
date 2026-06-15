@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import type { AnkiCard, GenerationStatus, BatchProgress } from '@/types'
-import { generateCards } from '@/lib/claude'
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react'
+import type { AnkiCard, GenerationStatus, BatchProgress, LogEntry } from '@/types'
+import { generateCards, splitIntoBatches } from '@/lib/claude'
 import { addNotesToDeck, createDeck } from '@/lib/ankiconnect'
 import { getRegistry, addToRegistry } from '@/lib/registry'
 import { useSettings } from './SettingsContext'
@@ -14,11 +14,20 @@ interface GenerationContextValue {
   status: GenerationStatus
   error: string | null
   batchProgress: BatchProgress | null
+  log: LogEntry[]
   generate: () => Promise<void>
   exportToAnki: () => Promise<void>
 }
 
 const GenerationContext = createContext<GenerationContextValue | null>(null)
+
+function ts() {
+  return new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+function mkLog(message: string, type: LogEntry['type'] = 'info'): LogEntry {
+  return { id: crypto.randomUUID(), time: ts(), message, type }
+}
 
 export function GenerationProvider({
   children,
@@ -42,6 +51,12 @@ export function GenerationProvider({
   const [status, setStatus] = useState<GenerationStatus>('idle')
   const [error, setError] = useState<string | null>(null)
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null)
+  const [log, setLog] = useState<LogEntry[]>([])
+  const failedRef = useRef(0)
+
+  function pushLog(message: string, type: LogEntry['type'] = 'info') {
+    setLog((prev) => [...prev, mkLog(message, type)])
+  }
 
   useEffect(() => {
     localStorage.setItem('noteki:note', noteContent)
@@ -57,30 +72,47 @@ export function GenerationProvider({
     setError(null)
     setBatchProgress(null)
     setCards([])
+    failedRef.current = 0
 
     const registry = getRegistry()
-    let failed = 0
+    const batches = splitIntoBatches(noteContent)
+    setLog([mkLog(`Splitting notes — ${batches.length} batch${batches.length > 1 ? 'es' : ''} detected`, 'info')])
 
     try {
       await generateCards({
         noteContent,
         preferences,
+        onBatchStart: (current, total) => {
+          pushLog(`Batch ${current} / ${total} — sending to Claude…`, 'info')
+          setBatchProgress({ current: current - 1, total, failed: failedRef.current })
+        },
         onBatchDone: (batchCards, current, total) => {
-          setBatchProgress({ current, total, failed })
+          setBatchProgress({ current, total, failed: failedRef.current })
           const marked = batchCards.map((card) => ({
             ...card,
             isDuplicate: registry.has(card.front),
           }))
           setCards((prev) => [...prev, ...marked])
-          if (current === total && failed === 0) onGenerated?.()
+
+          const names = batchCards
+            .map((c) => c.preview?.front ?? '—')
+            .slice(0, 4)
+            .join(', ')
+          const more = batchCards.length > 4 ? ` +${batchCards.length - 4} more` : ''
+          pushLog(`Batch ${current} / ${total} done — ${batchCards.length} card${batchCards.length !== 1 ? 's' : ''}: ${names}${more}`, 'success')
+
+          if (current === total && failedRef.current === 0) onGenerated?.()
         },
       })
       setStatus('done')
       setBatchProgress(null)
-      if (failed === 0) onGenerated?.()
+      pushLog(`All done — check the review panel`, 'success')
+      if (failedRef.current === 0) onGenerated?.()
     } catch (err) {
-      failed++
-      setError(err instanceof Error ? err.message : 'Generation failed')
+      failedRef.current++
+      const msg = err instanceof Error ? err.message : 'Generation failed'
+      pushLog(msg, 'error')
+      setError(msg)
       setStatus('error')
       setBatchProgress(null)
     }
@@ -96,12 +128,8 @@ export function GenerationProvider({
         await createDeck(url, deckConfig.deckName)
       }
       const { added, skipped } = await addNotesToDeck(url, deckConfig.deckName, cards)
-      // Save newly added cards to registry
-      const newFronts = cards
-        .filter((c) => !c.isDuplicate)
-        .map((c) => c.front)
+      const newFronts = cards.filter((c) => !c.isDuplicate).map((c) => c.front)
       addToRegistry(newFronts)
-      // Mark all as non-duplicate now that they're in the registry
       setCards((prev) => prev.map((c) => ({ ...c, isDuplicate: false })))
       setStatus('done')
       if (skipped > 0) {
@@ -115,7 +143,7 @@ export function GenerationProvider({
 
   return (
     <GenerationContext.Provider
-      value={{ noteContent, setNoteContent, cards, setCards, status, error, batchProgress, generate, exportToAnki }}
+      value={{ noteContent, setNoteContent, cards, setCards, status, error, batchProgress, log, generate, exportToAnki }}
     >
       {children}
     </GenerationContext.Provider>

@@ -4,6 +4,7 @@ import type { AnkiCard, CardPreferences, CardPreview } from '@/types'
 export interface GenerateCardsParams {
   noteContent: string
   preferences: CardPreferences
+  onBatchStart?: (batchIndex: number, total: number) => void
   onBatchDone?: (cards: AnkiCard[], batchIndex: number, total: number) => void
 }
 
@@ -49,10 +50,10 @@ Rules:
 - front: the grammar point only, keep it short
 - meaning: one concise English translation
 - pattern: the grammatical structure
-- examples: 3-5 natural Japanese sentences with English translation
+- examples: 4-5 natural Japanese sentences with English translation, or more sentence if it is necassary to capture the whole context of the grammar point
 - the given sentence should be a valid natural Japanese language that is used by the locals
 - if there is an example from the notes, you could reuse it, or if its too simple, you can make a new one that is more complex
-- the sentence should be a little bit more complex too, so in a real life case, it would be easier to visualize it
+- the sentence should be a bit more complex too, so in a real life case, it would be easier to visualize it
 - if its necessary, you could add notes: in the back to give a more detailed explanation, specific usecase, other usecase
 - for vocabulary points, make the vocabulary in the front, and the meaning in the back, do not group them together
 - there is definition in my notes, if you can make the definition better, you could replace or add it to the definition
@@ -161,7 +162,7 @@ async function generateBatch(client: Anthropic, chunk: string, preferences: Card
 }
 
 export async function generateCards(params: GenerateCardsParams): Promise<AnkiCard[]> {
-  const { noteContent, preferences, onBatchDone } = params
+  const { noteContent, preferences, onBatchStart, onBatchDone } = params
   const apiKey = import.meta.env.VITE_CLAUDE_API_KEY as string
 
   if (!apiKey) throw new Error('VITE_CLAUDE_API_KEY is not set in .env')
@@ -171,6 +172,7 @@ export async function generateCards(params: GenerateCardsParams): Promise<AnkiCa
   const allCards: AnkiCard[] = []
 
   for (let i = 0; i < batches.length; i++) {
+    onBatchStart?.(i + 1, batches.length)
     const cards = await generateBatch(client, batches[i], preferences)
     allCards.push(...cards)
     onBatchDone?.(cards, i + 1, batches.length)
