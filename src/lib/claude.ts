@@ -57,6 +57,7 @@ Rules:
 - if its necessary, you could add notes: in the back to give a more detailed explanation, specific usecase, other usecase
 - for vocabulary points, make the vocabulary in the front, and the meaning in the back, do not group them together
 - there is definition in my notes, if you can make the definition better, you could replace or add it to the definition
+- make sure only 1 grammar point per card, so if there is a similar one, differentiate it
 - tags: lowercase, relevant (jlpt level, grammar category, etc.)`
 
 interface RawExample {
