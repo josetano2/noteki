@@ -58,6 +58,8 @@ Rules:
 - for vocabulary points, make the vocabulary in the front, and the meaning in the back, do not group them together
 - there is definition in my notes, if you can make the definition better, you could replace or add it to the definition
 - make sure only 1 grammar point per card, so if there is a similar one, differentiate it
+- use bunpro.jp as your reference standard for Japanese grammar explanations — rely on its style of breaking down meaning, nuance, and usage, whether or not the notes link to it directly
+- if my notes are missing or have a weak explanation for a grammar point, fill the gap using that same bunpro-style explanation so the card is as accurate and complete as possible
 - tags: lowercase, relevant (jlpt level, grammar category, etc.)`
 
 interface RawExample {
