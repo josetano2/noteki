@@ -86,6 +86,16 @@ export function GenerationProvider({
           pushLog(`Batch ${current} / ${total} — sending to Claude…`, 'info')
           setBatchProgress({ current: current - 1, total, failed: failedRef.current })
         },
+        onBatchProgress: (chars, current) => {
+          setLog((prev) => {
+            const next = [...prev]
+            const last = next[next.length - 1]
+            if (last?.type === 'info' && last.message.startsWith(`Batch ${current}`)) {
+              next[next.length - 1] = { ...last, message: `Batch ${current} — receiving… ${chars.toLocaleString()} chars` }
+            }
+            return next
+          })
+        },
         onBatchDone: (batchCards, current, total) => {
           setBatchProgress({ current, total, failed: failedRef.current })
           const marked = batchCards.map((card) => ({

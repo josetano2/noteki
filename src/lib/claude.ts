@@ -5,6 +5,7 @@ export interface GenerateCardsParams {
   noteContent: string
   preferences: CardPreferences
   onBatchStart?: (batchIndex: number, total: number) => void
+  onBatchProgress?: (chars: number, batchIndex: number) => void
   onBatchDone?: (cards: AnkiCard[], batchIndex: number, total: number) => void
 }
 
@@ -121,7 +122,12 @@ function formatBack(card: RawCard): string {
 </div>`
 }
 
-async function generateBatch(client: Anthropic, chunk: string, preferences: CardPreferences): Promise<AnkiCard[]> {
+async function generateBatch(
+  client: Anthropic,
+  chunk: string,
+  preferences: CardPreferences,
+  onProgress?: (chars: number) => void,
+): Promise<AnkiCard[]> {
   const userPrompt = [
     preferences.language !== 'English' && `Target language: ${preferences.language}.`,
     preferences.includeTags ? 'Include relevant tags.' : 'Do not include tags.',
@@ -131,14 +137,25 @@ async function generateBatch(client: Anthropic, chunk: string, preferences: Card
     chunk,
   ].filter(Boolean).join('\n')
 
-  const message = await client.messages.create({
+  const stream = client.messages.stream({
     model: 'claude-sonnet-4-6',
-    max_tokens: 8192,
+    max_tokens: 16000,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   })
 
-  const raw = message.content[0].type === 'text' ? message.content[0].text : '{}'
+  let raw = ''
+  for await (const event of stream) {
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+      raw += event.delta.text
+      onProgress?.(raw.length)
+    }
+  }
+
+  const message = await stream.finalMessage()
+  if (message.stop_reason === 'max_tokens') {
+    throw new Error(`Response was cut off mid-generation (too many cards in one batch). Try splitting your notes into smaller sections.`)
+  }
   const cleaned = raw.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
 
   let parsed: { cards: RawCard[] }
@@ -168,7 +185,7 @@ async function generateBatch(client: Anthropic, chunk: string, preferences: Card
 }
 
 export async function generateCards(params: GenerateCardsParams): Promise<AnkiCard[]> {
-  const { noteContent, preferences, onBatchStart, onBatchDone } = params
+  const { noteContent, preferences, onBatchStart, onBatchProgress, onBatchDone } = params
   const apiKey = import.meta.env.VITE_CLAUDE_API_KEY as string
 
   if (!apiKey) throw new Error('VITE_CLAUDE_API_KEY is not set in .env')
@@ -179,7 +196,9 @@ export async function generateCards(params: GenerateCardsParams): Promise<AnkiCa
 
   for (let i = 0; i < batches.length; i++) {
     onBatchStart?.(i + 1, batches.length)
-    const cards = await generateBatch(client, batches[i], preferences)
+    const cards = await generateBatch(client, batches[i], preferences, (chars) =>
+      onBatchProgress?.(chars, i + 1),
+    )
     allCards.push(...cards)
     onBatchDone?.(cards, i + 1, batches.length)
   }
