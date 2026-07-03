@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: ./server
+    environment:
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY}
+    restart: unless-stopped
+    networks:
+      - internal
+
+  frontend:
+    build: .
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - internal
+      - reverse-proxy-network
+
+networks:
+  internal:
+  reverse-proxy-network:
+    external: true
