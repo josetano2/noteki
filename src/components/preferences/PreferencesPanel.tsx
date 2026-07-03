@@ -25,12 +25,6 @@ export function PreferencesPanel({ preferences, onChange }: PreferencesPanelProp
           <SelectContent>
             <SelectItem value="English">English</SelectItem>
             <SelectItem value="Japanese">Japanese</SelectItem>
-            <SelectItem value="Spanish">Spanish</SelectItem>
-            <SelectItem value="French">French</SelectItem>
-            <SelectItem value="German">German</SelectItem>
-            <SelectItem value="Portuguese">Portuguese</SelectItem>
-            <SelectItem value="Korean">Korean</SelectItem>
-            <SelectItem value="Chinese">Chinese</SelectItem>
           </SelectContent>
         </Select>
       </div>
