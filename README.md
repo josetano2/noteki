@@ -83,7 +83,6 @@ Your notes and generated cards are saved in localStorage so refreshing the page 
 
 ## Notes
 
-- Single shared Claude API key — anyone with the URL can generate cards using it; there's no per-user auth yet. Keep the URL private if that matters to you.
 - AnkiConnect only allows connections from localhost, so **Export to Anki only works when you open the site from the same machine Anki is running on**. AnkiConnect's `webCorsOriginList` config must include the deployed origin (`https://noteki.josetano.dev`) for this to work.
 - The grammar registry (`noteki:registry` in localStorage) tracks what has been exported and prevents re-exporting the same cards
 - Duplicate detection is handled by the local registry, not Anki's built-in check
